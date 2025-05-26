@@ -1,0 +1,35 @@
+rootProject.name = 'Exams'
+
+/**
+ * Returns true if the supplied directory is a Gradle project
+ * (i.e. it already owns its own build script).
+ */
+boolean isGradleProject(File dir) {
+    return new File(dir, 'build.gradle').exists() ||
+           new File(dir, 'build.gradle.kts').exists()
+}
+
+/**
+ * Recursively walk the repository and include every directory
+ * that qualifies as an independent Gradle project.
+ */
+void includeRecursively(File base) {
+    base.eachDir { File sub ->
+        // skip dot-folders (.git, .gradle, etc.)
+        if (sub.name.startsWith('.')) return
+
+        // If the folder itself is a Gradle project, register it.
+		if (isGradleProject(sub)) {
+			def relPath     = rootDir.toPath().relativize(sub.toPath()).toString()
+			def projectPath = ':' + relPath.replace(File.separator, ':')   // <-- fixed
+			include projectPath
+			project(projectPath).projectDir = sub
+		}
+
+        // Keep walking downward
+        includeRecursively(sub)
+    }
+}
+
+// Kick everything off from the repository root
+includeRecursively(rootDir)
